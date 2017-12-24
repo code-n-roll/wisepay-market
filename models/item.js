@@ -1,12 +1,12 @@
 const mongoose = require('mongoose');
 
 const itemSchema = mongoose.Schema({
-    // id: Number,
     name: String,
-    price: Number,
+    price: String,
     description: String,
-    imageUrl: String
-}, { collection: 'items'});
+    imageUrl: String,
+    categoryId: String
+}, { collection: 'item'});
 
 const Item = mongoose.model('Item', itemSchema);
 

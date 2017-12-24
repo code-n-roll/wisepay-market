@@ -10,13 +10,13 @@ mongoose.connect(process.env.MONGODB_URI, {
 });
 mongoose.Promise = global.Promise;
 
-const serviceRoutes = require('./service-routes');
+const marketRoutes = require('./market-routes');
 
 const app = express();
 app.use(bodyParser.json());
 
-app.use('/', serviceRoutes);
+app.use('/', marketRoutes);
 
-app.listen(process.env.PORT || 8001, () => {
+app.listen(process.env.PORT || 8000, () => {
     console.log('service listening');
 })
