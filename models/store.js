@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const storeSchema = mongoose.Schema({   
-    name: String
+    name: String,
+    imageUrl: String
 }, { collection: 'store'});
 
 const Store = mongoose.model('Store', storeSchema);

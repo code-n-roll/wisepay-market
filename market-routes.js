@@ -4,13 +4,8 @@ const express = require('express');
 const router = express.Router();
 
 const Store = require('./models/store');
-const ItemCategory = require('./models/itemCategory');
+const Category = require('./models/category');
 const Item = require('./models/item');
-
-router.get('/stores', async (req, res) => {
-    const stores = await Store.find();
-    return res.status(200).end(JSON.stringify(stores));
-});
 
 router.post('/stores', async (req, res) => {
     const model = req.body;
@@ -22,96 +17,118 @@ router.post('/stores', async (req, res) => {
         return;
     }
 
-    const store = new Store({
-        name: model.name
-    });
-
     try {
-        await store.save();
-        res.status(201).end(); 
+        await new Store({
+            name: model.name,
+            imageUrl: model.imageUrl
+        }).save();
     } catch (e) {
         res.status(500).json(
             errorResponse('Something happened in db')
         );
     }
-});
 
-router.post('/categories', async(req, res) => {
-    const model = req.body;
-
-    if (!model) {
-        res.status(400).end();
-        return;
-    }
-
-    const categories = model.categories;
-
-    categories.forEach(async category => {
+    model.categories.forEach(async categoryItem => {
         try {
-            console.log(category);
-            await new ItemCategory({
-                name: category.name
+            const store = await Store.findOne({name: model.name});
+            console.log(store.id);
+            
+            const category = await new Category({
+                name: categoryItem.name,
+                storeId: store.id
             }).save();
+            
+            categoryItem.items.forEach(async item => {
+                await new Item({
+                    name: item.name,
+                    price: item.price,
+                    description: item.description,
+                    imageUrl: item.image_url,
+                    categoryId: category.id
+                }).save();
+            });
         } catch (e) {
             res.status(500).json(
                 errorResponse('Something happened in db')
             );
         }
     });
-        
-    res.status(201).end()    
+
+    res.status(201).end(); 
+});
+
+router.get('/stores', async (req, res) => {
+    const stores = await Store.find();
+    
+    let storesResponse = [];
+
+    stores.forEach(store => {
+
+        storesResponse.push({
+            id: store._id,
+            name: store.name,
+            imageUrl: store.imageUrl
+        });
+    });
+    return res.status(200).json(storesResponse);
 });
 
 router.get('/categories', async(req, res) => {
-    const itemCategories = await ItemCategory.find();
-    res.status(200).end(JSON.stringify(itemCategories));
-});
+    const storeId = req.query.storeId;
+    let categories;
 
-router.post('/items', async(req, res) => {
-    const model = req.body;
-
-    if (!model) {
-        res.status(400).end();
-        return;
+    if (storeId) {
+        categories = await Category.find({storeId: storeId});
+    } else {
+        categories = await Category.find();
     }
 
-    const catalog = model.catalog;
+    let categoriesResponse = [];
 
-    catalog.forEach(async catalogItem => {
-        try {    
-            let itemCategory = await ItemCategory.findOne({ name: catalogItem.name});
-        } catch (e) {
-            res.status(500).json(
-                errorResponse('Something happened in db')
-            );
-        }
-
-        catalogItem.items.forEach(async item => {
-            new Item({
-                name: item.name,
-                price: item.price,
-                description: item.description,
-                imageUrl: item.imageUrl,
-                categoryId: itemCategory.id
-            }).save();
-        })
+    categories.forEach(Category => {
+        categoriesResponse.push({
+            id: Category._id,
+            name: Category.name,
+            storeId: Category.storeId
+        });
     });
 
-    res.status(201).end();
+    res.status(200).json(categoriesResponse);
 });
 
 router.get('/items', async(req, res) => {
     const categoryId = req.query.categoryId;
-
-    if (!categoryId) {
-        const items = await Item.find();
-
-        res.status(200).end(JSON.stringify(items));
-    } else {
-        const items = await Item.find({categoryId: req.query.categoryId });
-        
-        res.status(200).end(JSON.stringify(items));
+    let itemIds;
+    if (req.query.ids) {
+        itemIds = req.query.ids.split(',');
     }
+
+    let items = [];
+    
+    if (categoryId) {
+        items = await Item.find({ categoryId: req.query.categoryId });
+    } else if (itemIds) {
+        items = await Item.find();
+
+        items = items.filter((item) => {return itemIds.includes(item.id)});
+    } else {
+        items = await Item.find();
+    }
+
+    let itemsResponse = [];
+
+    items.forEach(item => {
+        itemsResponse.push({
+            id: item._id,
+            name: item.name,
+            price: item.price,
+            description: item.description,
+            imageUrl: item.imageUrl,
+            categoryId: item.categoryId
+        });
+    });
+    
+    res.status(200).json(itemsResponse);
 });
 
 function errorResponse(text) {
