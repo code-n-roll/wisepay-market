@@ -41,10 +41,11 @@ router.post('/stores', async (req, res) => {
             categoryItem.items.forEach(async item => {
                 await new Item({
                     name: item.name,
-                    price: item.price,
+                    price: Number(String(item.price).replace(/[а-яa-z]*/ig, "").trim()),
                     description: item.description,
                     imageUrl: item.image_url,
-                    categoryId: category.id
+                    categoryId: category.id,
+                    currency: "BYN"
                 }).save();
             });
         } catch (e) {
@@ -121,10 +122,11 @@ router.get('/items', async(req, res) => {
         itemsResponse.push({
             id: item._id,
             name: item.name,
-            price: item.price,
+            price: Number(item.price),
             description: item.description,
             imageUrl: item.imageUrl,
-            categoryId: item.categoryId
+            categoryId: item.categoryId,
+            currency: "BYN"
         });
     });
     
