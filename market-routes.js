@@ -59,19 +59,81 @@ router.post('/stores', async (req, res) => {
 });
 
 router.get('/stores', async (req, res) => {
-    const stores = await Store.find();
+
+    try { 
+        const stores = await Store.find();
     
-    let storesResponse = [];
+        let storesResponse = [];
 
-    stores.forEach(store => {
+        stores.forEach(store => {
 
-        storesResponse.push({
+            storesResponse.push({
+                id: store._id,
+                name: store.name,
+                imageUrl: store.imageUrl
+            });
+        });
+
+        res.status(200).json(storesResponse);        
+
+    } catch (e) {
+        res.status(500).json(
+            errorResponse('Something happened in db')
+        );
+    }
+});
+
+router.get('/stores/:storeId', async (req, res) => {
+    const storeId = req.params.storeId;
+    
+    if (!storeId) {
+        res.status(400).end();
+        return;
+    }
+
+    try {
+        const store = await Store.findOne({_id: storeId});
+        const categories = await Category.find({storeId: storeId});
+
+        let storeResponse = {
             id: store._id,
             name: store.name,
-            imageUrl: store.imageUrl
+            categories: []
+        }  
+
+        const items = await Item.find();
+
+        categories.forEach(category => {
+        
+            const filteredItems = items.filter(item => item.categoryId === category.id);
+
+            let itemsResponse = [];
+
+            filteredItems.forEach(item => {
+                itemsResponse.push({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    description: item.description,
+                    imageUrl: item.imageUrl,
+                    currency: item.currency
+                });
+            });
+
+            storeResponse.categories.push({
+                id: category.id,
+                name: category.name,
+                items: itemsResponse
+            });
         });
-    });
-    return res.status(200).json(storesResponse);
+
+        res.status(200).json(storeResponse);        
+        
+    } catch (e) {
+        res.status(500).json(
+            errorResponse('Something happened in db')
+        );
+    }
 });
 
 router.get('/categories', async(req, res) => {
@@ -90,7 +152,6 @@ router.get('/categories', async(req, res) => {
         categoriesResponse.push({
             id: Category._id,
             name: Category.name,
-            storeId: Category.storeId
         });
     });
 
@@ -100,36 +161,61 @@ router.get('/categories', async(req, res) => {
 router.get('/items', async(req, res) => {
     const categoryId = req.query.categoryId;
     let itemIds;
+
     if (req.query.ids) {
         itemIds = req.query.ids.split(',');
     }
 
     let items = [];
     
+    let itemsResponse = [];    
+
     if (categoryId) {
         items = await Item.find({ categoryId: req.query.categoryId });
+
+        items.forEach(item => {
+            itemsResponse.push({
+                id: item._id,
+                name: item.name,
+                price: Number(item.price),
+                description: item.description,
+                imageUrl: item.imageUrl,
+                currency: "BYN"
+            });
+        });
+
     } else if (itemIds) {
         items = await Item.find();
 
         items = items.filter((item) => {return itemIds.includes(item.id)});
+
+        items.forEach(item => {
+            itemsResponse.push({
+                id: item._id,
+                name: item.name,
+                price: Number(item.price),
+                description: item.description,
+                imageUrl: item.imageUrl,
+                categoryId: item.categoryId,
+                currency: "BYN"
+            });
+        });
     } else {
         items = await Item.find();
+
+        items.forEach(item => {
+            itemsResponse.push({
+                id: item._id,
+                name: item.name,
+                price: Number(item.price),
+                description: item.description,
+                imageUrl: item.imageUrl,
+                categoryId: item.categoryId,
+                currency: "BYN"
+            });
+        });
     }
 
-    let itemsResponse = [];
-
-    items.forEach(item => {
-        itemsResponse.push({
-            id: item._id,
-            name: item.name,
-            price: Number(item.price),
-            description: item.description,
-            imageUrl: item.imageUrl,
-            categoryId: item.categoryId,
-            currency: "BYN"
-        });
-    });
-    
     res.status(200).json(itemsResponse);
 });
 
