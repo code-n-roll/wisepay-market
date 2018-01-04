@@ -92,6 +92,7 @@ router.get('/stores/:storeId', async (req, res) => {
     }
 
     try {
+
         const store = await Store.findOne({_id: storeId});
         const categories = await Category.find({storeId: storeId});
 
@@ -101,7 +102,12 @@ router.get('/stores/:storeId', async (req, res) => {
             categories: []
         }  
 
-        const items = await Item.find();
+        filteredCategoryId = [];
+        categories.forEach(category => {
+            filteredCategoryId.push(category.id);
+        });
+        
+        const items = await Item.find({categoryId: { $in: filteredCategoryId}});
 
         categories.forEach(category => {
         
