@@ -1,12 +1,9 @@
 const mongoose = require('mongoose');
 
-const storeSchema = mongoose.Schema({
-    // id: Int,
+const storeSchema = mongoose.Schema({   
     name: String,
-    catalog: [{}]
-    // categories: [{type: Schema.Types.ObjectId, ref: 'StoreCategory'}],
-    // catalog: [{type: Schema.Types.ObjectId, ref: 'ItemCategory'}]
-}, { collection: 'stores'});
+    imageUrl: String
+}, { collection: 'store'});
 
 const Store = mongoose.model('Store', storeSchema);
 
